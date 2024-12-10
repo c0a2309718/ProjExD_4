@@ -246,7 +246,7 @@ class EMP:
     """
     電磁パルス(EMP)に関するクラス
     """
-    def __init__(self,enemy:Enemy,bomb:Bomb,screen:pg.Surface):
+    def __init__(self,enemy,bomb,screen):
         self.enemy = enemy
         self.bomb = bomb
         self.screen = screen
