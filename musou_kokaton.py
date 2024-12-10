@@ -100,7 +100,60 @@ class Bird(pg.sprite.Sprite):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
         screen.blit(self.image, self.rect)
+        if key_lst[pg.K_LSHIFT]:
+            self.speed = 20
+        else:
+            self.speed = 10
 
+
+class Defense(pg.sprite.Sprite):
+    """
+    こうかとんが向いている先に防御壁を生成するクラス
+    """
+    def __init__(self, bird:Bird, life:int = 400):
+        """
+        防御壁を生成する
+        引数1: こうかとんに関するクラス
+        引数2: 持続時間を設定する整数
+        """
+        super().__init__()
+        bird_he = bird.image.get_height() #画像の縦サイズ
+        bird_wi = bird.image.get_width() #横サイズ
+        self.imgs = {
+            (+1, 0): (bird_wi+bird_wi//2, 0),  # 右
+            (+1, -1): (bird_wi + bird_wi//2, -bird_he),  # 右上
+            (0, -1): (0, -bird_he),  # 上
+            (-1, -1): (-bird_wi, -bird_he),  # 左上
+            (-1, 0): (-bird_wi, 0),  # 左
+            (-1, +1): (-bird_wi, bird_he),  # 左下
+            (0, +1): (0, bird_he),  # 下
+            (+1, +1): (bird_wi+bird_wi//2, bird_he)#右下
+            }
+        loca = self.imgs[bird.dire] #向いている向きからこうかとん画像一体分の距離
+        weight = 20
+        top_left = bird.rect.topleft #こうかとん画像の左上座標
+        bot_light = bird.rect.bottomright #こうかとん画像の右下座標
+        self.image = pg.Surface((weight, bird_he * 2), pg.SRCALPHA)
+        color = (173,0,45)
+        pg.draw.rect(self.image, color,
+                     (0, 0, weight, bird_he * 2))
+        vx, vy = bird.dire
+        angle = math.degrees(math.atan2(-vy, vx))#画像の変更用角度
+        self.image = pg.transform.rotate(self.image, angle)#壁の角度変更
+        self.rect = self.image.get_rect()
+        self.rect.topleft = top_left
+        #こうかとんが向いている向きに壁を生成
+        self.rect.center = (top_left[0] + weight // 2 + loca[0], top_left[1] + bird_he // 2 + loca[1])
+        self.life = life
+    
+    def update(self, screen: pg.Surface):
+        """
+        壁の継続処理
+        """
+        screen.blit(self.image, self.rect)
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 class Defense(pg.sprite.Sprite):
     """
@@ -190,17 +243,17 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, angle0: int = 0):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
         """
         super().__init__()
         self.vx, self.vy = bird.dire
-        angle = math.degrees(math.atan2(-self.vy, self.vx))
-        self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), angle, 1.0)
-        self.vx = math.cos(math.radians(angle))
-        self.vy = -math.sin(math.radians(angle))
+        angle = math.degrees(math.atan2(-self.vy, self.vx)) 
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), angle + angle0, 1.0)
+        self.vx = math.cos(math.radians(angle + angle0))
+        self.vy = -math.sin(math.radians(angle + angle0)) 
         self.rect = self.image.get_rect()
         self.rect.centery = bird.rect.centery+bird.rect.height*self.vy
         self.rect.centerx = bird.rect.centerx+bird.rect.width*self.vx
@@ -215,6 +268,32 @@ class Beam(pg.sprite.Sprite):
         if check_bound(self.rect) != (True, True):
             self.kill()
 
+
+class NeoBeam(pg.sprite.Sprite):
+    """
+    複数方向にビームを発射するクラス
+    """
+    def __init__(self, bird: Bird, num: int):
+        """
+        NeoBeamインスタンスを生成し、ビームのリストを生成する
+        引数1 bird：ビームを放つこうかとん
+        引数2 num：発射するビームの数
+        """
+        super().__init__()
+        self.beams = self.gen_beams(bird, num)
+
+    @staticmethod
+    def gen_beams(bird: Bird, num: int) -> list[Beam]:
+        """
+        指定された数だけ異なる角度のビームを生成する
+        引数1 bird：ビームを放つこうかとん
+        引数2 num：発射するビームの数
+        戻り値：生成したBeamインスタンスのリスト
+        """
+        step = 100 // (num - 1)
+        angles = range(-50, 51, step)
+        beams = [Beam(bird, angle) for angle in angles]
+        return beams
 
 class Explosion(pg.sprite.Sprite):
     """
@@ -311,8 +390,15 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
-            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_SPACE and not key_lst[pg.K_LSHIFT]:
+                    # 通常ビームの発射
+                    beams.add(Beam(bird))
+                if event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
+                    # 弾幕の発射
+                    neo_beam = NeoBeam(bird, 5)  # ビーム数を5本に設定
+                    beams.add(neo_beam.beams)  # Beamグループに追加
+
             if event.type == pg.KEYDOWN and event.key == pg.K_s:
                 if len(defenses) is not 1:#壁が存在しないなら
                     if score.value >= 50:#スコアが50以上なら
@@ -320,11 +406,11 @@ def main():
                         defenses.add(Defense(bird, 400))
         screen.blit(bg_img, [0, 0])
 
-        if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
+        if tmr % 200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
 
         for emy in emys:
-            if emy.state == "stop" and tmr%emy.interval == 0:
+            if emy.state == "stop" and tmr % emy.interval == 0:
                 # 敵機が停止状態に入ったら，intervalに応じて爆弾投下
                 bombs.add(Bomb(emy, bird))
 
@@ -361,6 +447,7 @@ def main():
         pg.display.update()
         tmr += 1
         clock.tick(50)
+
 
 
 if __name__ == "__main__":
