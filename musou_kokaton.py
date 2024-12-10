@@ -105,7 +105,7 @@ class Bird(pg.sprite.Sprite):
         if key_lst[pg.K_RSHIFT] and score.value >= 100:  # 右Shiftキー押下、スコア100以上
             self.state = "hyper"
             score.value -= 100
-            self.hyper_life = 500
+            self.hyper_life = 0
         if self.state == "hyper":  # ステータスが無敵だったら
             self.image = pg.transform.laplacian(self.image)  # 発動中の画像
             self.hyper_life -= 1
@@ -167,54 +167,6 @@ class Defense(pg.sprite.Sprite):
         if self.life < 0:
             self.kill()
 
-class Defense(pg.sprite.Sprite):
-    """
-    こうかとんが向いている先に防御壁を生成するクラス
-    """
-    def __init__(self, bird:Bird, life:int = 400):
-        """
-        防御壁を生成する
-        引数1: こうかとんに関するクラス
-        引数2: 持続時間を設定する整数
-        """
-        super().__init__()
-        bird_he = bird.image.get_height() #画像の縦サイズ
-        bird_wi = bird.image.get_width() #横サイズ
-        self.imgs = {
-            (+1, 0): (bird_wi+bird_wi//2, 0),  # 右
-            (+1, -1): (bird_wi + bird_wi//2, -bird_he),  # 右上
-            (0, -1): (0, -bird_he),  # 上
-            (-1, -1): (-bird_wi, -bird_he),  # 左上
-            (-1, 0): (-bird_wi, 0),  # 左
-            (-1, +1): (-bird_wi, bird_he),  # 左下
-            (0, +1): (0, bird_he),  # 下
-            (+1, +1): (bird_wi+bird_wi//2, bird_he)#右下
-            }
-        loca = self.imgs[bird.dire] #向いている向きからこうかとん画像一体分の距離
-        weight = 20
-        top_left = bird.rect.topleft #こうかとん画像の左上座標
-        bot_light = bird.rect.bottomright #こうかとん画像の右下座標
-        self.image = pg.Surface((weight, bird_he * 2), pg.SRCALPHA)
-        color = (173,0,45)
-        pg.draw.rect(self.image, color,
-                     (0, 0, weight, bird_he * 2))
-        vx, vy = bird.dire
-        angle = math.degrees(math.atan2(-vy, vx))#画像の変更用角度
-        self.image = pg.transform.rotate(self.image, angle)#壁の角度変更
-        self.rect = self.image.get_rect()
-        self.rect.topleft = top_left
-        #こうかとんが向いている向きに壁を生成
-        self.rect.center = (top_left[0] + weight // 2 + loca[0], top_left[1] + bird_he // 2 + loca[1])
-        self.life = life
-    
-    def update(self, screen: pg.Surface):
-        """
-        壁の継続処理
-        """
-        screen.blit(self.image, self.rect)
-        self.life -= 1
-        if self.life < 0:
-            self.kill()
 
 class Bomb(pg.sprite.Sprite):
     """
