@@ -260,7 +260,7 @@ class Gravity(pg.sprite.Sprite):
     
     def update(self, screen: pg.Surface):
         """
-        発動時間を1ずつ減算し、0未満になったら終わる
+        発動時間を1ずつ減算し0未満になったら終わる
         引数 screen：画面Surface
         """
         self.life -= 1
