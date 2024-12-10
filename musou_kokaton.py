@@ -242,6 +242,38 @@ class Score:
         screen.blit(self.image, self.rect)
 
 
+class EMP:
+    """
+    電磁パルス(EMP)に関するクラス
+    """
+    def __init__(self,enemy:Enemy,bomb:Bomb,screen:pg.Surface):
+        self.enemy = enemy
+        self.bomb = bomb
+        self.screen = screen
+        self.active = False
+        self.timer = 0
+        self.duration = 1
+
+    def active(self):
+        self.active = True
+        self.timer = self.duration
+        for enemy in self.enemys:
+            enemy.interval = float('inf')
+            enemy.image = pg.transform.laplacian(enemy.image)
+        for bomb in self.bombs:
+            bomb.speed *= 0.5
+            bomb.state = "inactinve"
+        
+    def update(self):
+        if self.active:
+            overlay = pg.Surface(self.screen.get_size(),pg.SRCALPHA)
+            overlay.full((255, 255, 0, 128))
+            self.screen.blit(overlay,(0, 0))
+            self.timer -= 1
+            if self.timer <= 0:
+                self.active = False
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -253,6 +285,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    emps = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -263,6 +296,10 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_e :
+                if score.value >= 20: 
+                    emps.add(EMP(emy,bombs,screen))
+                    score.value -= 20
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -288,6 +325,7 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
 
         bird.update(key_lst, screen)
         beams.update()
