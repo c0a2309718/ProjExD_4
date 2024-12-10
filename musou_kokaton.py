@@ -118,6 +118,104 @@ class Bird(pg.sprite.Sprite):
             self.speed = 10
 
 
+class Defense(pg.sprite.Sprite):
+    """
+    こうかとんが向いている先に防御壁を生成するクラス
+    """
+    def __init__(self, bird:Bird, life:int = 400):
+        """
+        防御壁を生成する
+        引数1: こうかとんに関するクラス
+        引数2: 持続時間を設定する整数
+        """
+        super().__init__()
+        bird_he = bird.image.get_height() #画像の縦サイズ
+        bird_wi = bird.image.get_width() #横サイズ
+        self.imgs = {
+            (+1, 0): (bird_wi+bird_wi//2, 0),  # 右
+            (+1, -1): (bird_wi + bird_wi//2, -bird_he),  # 右上
+            (0, -1): (0, -bird_he),  # 上
+            (-1, -1): (-bird_wi, -bird_he),  # 左上
+            (-1, 0): (-bird_wi, 0),  # 左
+            (-1, +1): (-bird_wi, bird_he),  # 左下
+            (0, +1): (0, bird_he),  # 下
+            (+1, +1): (bird_wi+bird_wi//2, bird_he)#右下
+            }
+        loca = self.imgs[bird.dire] #向いている向きからこうかとん画像一体分の距離
+        weight = 20
+        top_left = bird.rect.topleft #こうかとん画像の左上座標
+        bot_light = bird.rect.bottomright #こうかとん画像の右下座標
+        self.image = pg.Surface((weight, bird_he * 2), pg.SRCALPHA)
+        color = (173,0,45)
+        pg.draw.rect(self.image, color,
+                     (0, 0, weight, bird_he * 2))
+        vx, vy = bird.dire
+        angle = math.degrees(math.atan2(-vy, vx))#画像の変更用角度
+        self.image = pg.transform.rotate(self.image, angle)#壁の角度変更
+        self.rect = self.image.get_rect()
+        self.rect.topleft = top_left
+        #こうかとんが向いている向きに壁を生成
+        self.rect.center = (top_left[0] + weight // 2 + loca[0], top_left[1] + bird_he // 2 + loca[1])
+        self.life = life
+    
+    def update(self, screen: pg.Surface):
+        """
+        壁の継続処理
+        """
+        screen.blit(self.image, self.rect)
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
+class Defense(pg.sprite.Sprite):
+    """
+    こうかとんが向いている先に防御壁を生成するクラス
+    """
+    def __init__(self, bird:Bird, life:int = 400):
+        """
+        防御壁を生成する
+        引数1: こうかとんに関するクラス
+        引数2: 持続時間を設定する整数
+        """
+        super().__init__()
+        bird_he = bird.image.get_height() #画像の縦サイズ
+        bird_wi = bird.image.get_width() #横サイズ
+        self.imgs = {
+            (+1, 0): (bird_wi+bird_wi//2, 0),  # 右
+            (+1, -1): (bird_wi + bird_wi//2, -bird_he),  # 右上
+            (0, -1): (0, -bird_he),  # 上
+            (-1, -1): (-bird_wi, -bird_he),  # 左上
+            (-1, 0): (-bird_wi, 0),  # 左
+            (-1, +1): (-bird_wi, bird_he),  # 左下
+            (0, +1): (0, bird_he),  # 下
+            (+1, +1): (bird_wi+bird_wi//2, bird_he)#右下
+            }
+        loca = self.imgs[bird.dire] #向いている向きからこうかとん画像一体分の距離
+        weight = 20
+        top_left = bird.rect.topleft #こうかとん画像の左上座標
+        bot_light = bird.rect.bottomright #こうかとん画像の右下座標
+        self.image = pg.Surface((weight, bird_he * 2), pg.SRCALPHA)
+        color = (173,0,45)
+        pg.draw.rect(self.image, color,
+                     (0, 0, weight, bird_he * 2))
+        vx, vy = bird.dire
+        angle = math.degrees(math.atan2(-vy, vx))#画像の変更用角度
+        self.image = pg.transform.rotate(self.image, angle)#壁の角度変更
+        self.rect = self.image.get_rect()
+        self.rect.topleft = top_left
+        #こうかとんが向いている向きに壁を生成
+        self.rect.center = (top_left[0] + weight // 2 + loca[0], top_left[1] + bird_he // 2 + loca[1])
+        self.life = life
+    
+    def update(self, screen: pg.Surface):
+        """
+        壁の継続処理
+        """
+        screen.blit(self.image, self.rect)
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
 class Bomb(pg.sprite.Sprite):
     """
     爆弾に関するクラス
@@ -274,7 +372,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 0
+        self.value = 500
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -295,6 +393,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    defenses = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -312,6 +411,11 @@ def main():
                     neo_beam = NeoBeam(bird, 5)  # ビーム数を5本に設定
                     beams.add(neo_beam.beams)  # Beamグループに追加
 
+            if event.type == pg.KEYDOWN and event.key == pg.K_s:
+                if len(defenses) is not 1:#壁が存在しないなら
+                    if score.value >= 50:#スコアが50以上なら
+                        score.value -= 50
+                        defenses.add(Defense(bird, 400))
         screen.blit(bg_img, [0, 0])
 
         if tmr % 200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -331,6 +435,9 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
         
+        for bomb in pg.sprite.groupcollide(bombs, defenses, True, False).keys():
+            exps.add(Explosion(bomb, 50))
+
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
             if bird.state == "normal":
                 bird.change_img(8, screen)  # こうかとん悲しみエフェクト
@@ -352,6 +459,7 @@ def main():
         exps.update()
         exps.draw(screen)
         score.update(screen)
+        defenses.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
