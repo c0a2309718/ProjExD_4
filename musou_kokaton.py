@@ -125,23 +125,27 @@ class Defense(pg.sprite.Sprite):
             (0, +1): (0, bird_he),  # 下
             (+1, +1): (bird_wi+bird_wi//2, bird_he)#右下
             }
-        loca = self.imgs[bird.dire]
+        loca = self.imgs[bird.dire] #向いている向きからこうかとん画像一体分の距離
         weight = 20
-        top_left = bird.rect.topleft
-        bot_light = bird.rect.bottomright
+        top_left = bird.rect.topleft #こうかとん画像の左上座標
+        bot_light = bird.rect.bottomright #こうかとん画像の右下座標
         self.image = pg.Surface((weight, bird_he * 2), pg.SRCALPHA)
         color = (173,0,45)
         pg.draw.rect(self.image, color,
                      (0, 0, weight, bird_he * 2))
         vx, vy = bird.dire
-        angle = math.degrees(math.atan2(-vy, vx))
-        self.image = pg.transform.rotate(self.image, angle)
+        angle = math.degrees(math.atan2(-vy, vx))#画像の変更用角度
+        self.image = pg.transform.rotate(self.image, angle)#壁の角度変更
         self.rect = self.image.get_rect()
         self.rect.topleft = top_left
+        #こうかとんが向いている向きに壁を生成
         self.rect.center = (top_left[0] + weight // 2 + loca[0], top_left[1] + bird_he // 2 + loca[1])
         self.life = life
     
     def update(self, screen: pg.Surface):
+        """
+        壁の継続処理
+        """
         screen.blit(self.image, self.rect)
         self.life -= 1
         if self.life < 0:
@@ -310,8 +314,8 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_s:
-                if len(defenses) is not 1:
-                    if score.value >= 0:
+                if len(defenses) is not 1:#壁が存在しないなら
+                    if score.value >= 50:#スコアが50以上なら
                         score.value -= 50
                         defenses.add(Defense(bird, 400))
         screen.blit(bg_img, [0, 0])
