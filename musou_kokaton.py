@@ -311,7 +311,9 @@ def main():
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_s:
                 if len(defenses) is not 1:
-                    defenses.add(Defense(bird, 400))
+                    if score.value >= 0:
+                        score.value -= 50
+                        defenses.add(Defense(bird, 400))
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -330,6 +332,9 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():  # ビームと衝突した爆弾リスト
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
+        
+        for bomb in pg.sprite.groupcollide(bombs, defenses, True, False).keys():
+            exps.add(Explosion(bomb, 50))
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
             bird.change_img(8, screen)  # こうかとん悲しみエフェクト
