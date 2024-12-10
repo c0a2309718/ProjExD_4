@@ -320,11 +320,11 @@ def main():
             time.sleep(2)
             return
         
-        for emy in pg.sprite.groupcollide(emys, gravities, True, False):
+        for emy in pg.sprite.groupcollide(emys, gravities, True, False):  # 重力場と衝突した敵機リスト
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.value += 10  # 10点アップ
         
-        for bomb in pg.sprite.groupcollide(bombs, gravities, True, False):
+        for bomb in pg.sprite.groupcollide(bombs, gravities, True, False):  # 重力場と衝突した爆弾リスト
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
 
