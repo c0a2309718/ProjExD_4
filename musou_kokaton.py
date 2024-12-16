@@ -102,15 +102,15 @@ class Bird(pg.sprite.Sprite):
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
-        if key_lst[pg.K_RSHIFT] and score.value >= 100:  # 右Shiftキー押下、スコア100以上
+        if key_lst[pg.K_RSHIFT] and score.value >= 100 and self.state == "normal":  # 右Shiftキー押下、スコア100以上
             self.state = "hyper"
             score.value -= 100
-            self.hyper_life = 0
+            self.hyper_life = 500
         if self.state == "hyper":  # ステータスが無敵だったら
             self.image = pg.transform.laplacian(self.image)  # 発動中の画像
             self.hyper_life -= 1
-            if self.hyper_life < 0:
-                self.state = "normal"
+        if self.hyper_life < 0:
+            self.state = "normal"
         screen.blit(self.image, self.rect)
         if key_lst[pg.K_LSHIFT]:
             self.speed = 20
@@ -334,33 +334,46 @@ class Score:
         screen.blit(self.image, self.rect)
 
 
-class EMP:
+class EMP(pg.sprite.Sprite):
     """
     電磁パルス(EMP)に関するクラス
     """
-    def __init__(self,enemy,bomb,screen):
-        self.enemy = enemy
-        self.bomb = bomb
+    def __init__(self, enemies: pg.sprite.Group, bombs: pg.sprite.Group, screen: pg.Surface):
+        super().__init__()
+        self.enemies = enemies
+        self.bombs = bombs
         self.screen = screen
         self.active = False
         self.timer = 0
-        self.duration = 1
+        self.duration = 3  # EMPの持続時間（秒単位）
 
-    def active(self):
+    def activate(self):
+        """
+        EMPを発動する
+        """
         self.active = True
-        self.timer = self.duration
-        for enemy in self.enemys:
+        self.timer = self.duration * 50  # フレーム数に変換（50FPS基準）
+
+        # 敵機を無効化
+        for enemy in self.enemies:
             enemy.interval = float('inf')
             enemy.image = pg.transform.laplacian(enemy.image)
+
+        # 爆弾を無効化
         for bomb in self.bombs:
             bomb.speed *= 0.5
-            bomb.state = "inactinve"
+            bomb.state = "inactive"
         
     def update(self):
+        """
+        EMPの効果を更新する
+        """
         if self.active:
-            overlay = pg.Surface(self.screen.get_size(),pg.SRCALPHA)
-            overlay.full((255, 255, 0, 128))
-            self.screen.blit(overlay,(0, 0))
+            # 透明な黄色い矩形を画面に表示
+            overlay = pg.Surface(self.screen.get_size(), pg.SRCALPHA)
+            overlay.fill((255, 255, 0, 128))  # 黄色、透明度128
+            self.screen.blit(overlay, (0, 0))
+
             self.timer -= 1
             if self.timer <= 0:
                 self.active = False
@@ -422,9 +435,9 @@ def main():
                     # 弾幕の発射
                     neo_beam = NeoBeam(bird, 5)  # ビーム数を5本に設定
                     beams.add(neo_beam.beams)  # Beamグループに追加
-            if event.type == pg.KEYDOWN and event.key == pg.K_e :
+            if event.type == pg.KEYDOWN and event.key == pg.K_d :
                 if score.value >= 20: 
-                #     emps.add(EMP(emy,bombs,screen))
+                    #emps.add(EMP())
                     score.value -= 20
             if event.type == pg.KEYDOWN and event.key == pg.K_a:
                 if score.value >= 200:
@@ -465,8 +478,10 @@ def main():
                 pg.display.update()
                 time.sleep(2)
                 return
-        
-        
+            else:
+                exps.add(Explosion(bomb, 50))
+                score.value += 1 
+
         for emy in pg.sprite.groupcollide(emys, gravities, True, False):  # 重力場と衝突した敵機リスト
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.value += 10  # 10点アップ
@@ -489,6 +504,8 @@ def main():
         gravities.update(screen)
         gravities.draw(screen)
         defenses.update(screen)
+        emps.update()
+        emps.draw(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
