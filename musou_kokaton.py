@@ -334,49 +334,37 @@ class Score:
         screen.blit(self.image, self.rect)
 
 
-class EMP(pg.sprite.Sprite):
+class EMP:
     """
-    電磁パルス(EMP)に関するクラス
+    電磁パルス（EMP）を発動するクラス
+    敵機：爆弾を投下できなくなる（画像にラプラシアンフィルタを適用）
+    爆弾：速度が半減し、起爆しなくなる
+    発動時：画面に黄色の透明な矩形を表示
     """
     def __init__(self, enemies: pg.sprite.Group, bombs: pg.sprite.Group, screen: pg.Surface):
-        super().__init__()
         self.enemies = enemies
         self.bombs = bombs
         self.screen = screen
-        self.active = False
-        self.timer = 0
-        self.duration = 3  # EMPの持続時間（秒単位）
+        self.duration = 3  # 持続時間（秒）
+        self.effect_time = time.time()
 
-    def activate(self):
-        """
-        EMPを発動する
-        """
-        self.active = True
-        self.timer = self.duration * 50  # フレーム数に変換（50FPS基準）
-
-        # 敵機を無効化
+        # 敵機の爆弾投下を無効化し、画像を変更
         for enemy in self.enemies:
-            enemy.interval = float('inf')
-            enemy.image = pg.transform.laplacian(enemy.image)
+            enemy.interval = float('inf')  # 爆弾を投下しなくする
+            enemy.image = pg.transform.laplacian(enemy.image)  # 見た目を変更
 
-        # 爆弾を無効化
+        # 爆弾の速度を半減し、無効化状態にする
         for bomb in self.bombs:
-            bomb.speed *= 0.5
+            bomb.speed /= 2
             bomb.state = "inactive"
-        
-    def update(self):
-        """
-        EMPの効果を更新する
-        """
-        if self.active:
-            # 透明な黄色い矩形を画面に表示
-            overlay = pg.Surface(self.screen.get_size(), pg.SRCALPHA)
-            overlay.fill((255, 255, 0, 128))  # 黄色、透明度128
-            self.screen.blit(overlay, (0, 0))
 
-            self.timer -= 1
-            if self.timer <= 0:
-                self.active = False
+        # 透明な黄色の矩形を画面全体に表示
+        yellow_overlay = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
+        yellow_overlay.fill((255, 255, 0, 128))  # 半透明な黄色
+        self.screen.blit(yellow_overlay, (0, 0))
+        pg.display.update()
+        time.sleep(0.05)  # 表示時間（0.05秒）
+
 
 
 class Gravity(pg.sprite.Sprite):
@@ -437,10 +425,10 @@ def main():
                     beams.add(neo_beam.beams)  # Beamグループに追加
             if event.type == pg.KEYDOWN and event.key == pg.K_d :
                 if score.value >= 20: 
-                    #emps.add(EMP())
+                    EMP(emys, bombs, screen)
                     score.value -= 20
             if event.type == pg.KEYDOWN and event.key == pg.K_a:
-                if score.value >= 200:
+                if score.value >= 200 and len(gravities) is not 1:
                     gravities.add(Gravity(400))
                     score.value -= 200
 
