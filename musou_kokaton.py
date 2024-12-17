@@ -324,7 +324,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 500
+        self.value = 0
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -425,7 +425,7 @@ def main():
                     beams.add(neo_beam.beams)  # Beamグループに追加
             if event.type == pg.KEYDOWN and event.key == pg.K_d :
                 if score.value >= 20: 
-                    EMP(emys, bombs, screen)
+                    #EMP(emys, bombs, screen)
                     score.value -= 20
             if event.type == pg.KEYDOWN and event.key == pg.K_a:
                 if score.value >= 200 and len(gravities) is not 1:
